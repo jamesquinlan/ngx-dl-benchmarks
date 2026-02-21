@@ -2,7 +2,7 @@
 
 Benchmarking Deep Neural Network (DNN) training using next-generation low-precision arithmetic in Julia.
 
----
+
 
 ## Overview
 
@@ -17,7 +17,7 @@ This repository provides reproducible benchmarks for training deep neural networ
 
 The goal is to systematically evaluate **stability, convergence, and performance tradeoffs** when training DNNs in low-precision, providing insights for both numerical analysis and machine learning research.
 
----
+
 
 ## Features
 
@@ -26,7 +26,7 @@ The goal is to systematically evaluate **stability, convergence, and performance
 - Easy to extend to new arithmetic formats or architectures  
 - Fully reproducible with Julia scripts and configuration files  
 
----
+
 
 ## Installation
 
@@ -52,7 +52,7 @@ Pkg.instantiate()
 * [Plots.jl](https://github.com/JuliaPlots/Plots.jl) – Plotting results
 * [CSV.jl / DataFrames.jl](https://github.com/JuliaData) – Export results
 
----
+
 
 ## Usage
 
@@ -76,7 +76,7 @@ Example benchmarking multiple arithmetic types:
 julia run_benchmark.jl --arithmetic=fp16,bfloat16,posit16 --model=resnet18 --dataset=cifar10
 ```
 
----
+
 
 ## Results
 
@@ -89,7 +89,7 @@ Benchmark outputs include:
 
 Results can be exported in CSV or JSON for further analysis.
 
----
+
 
 ## Contributing
 
@@ -101,13 +101,13 @@ Contributions are welcome! You can help by:
 
 Please fork the repository and submit pull requests.
 
----
+
 
 ## License
 
 This project is released under the MIT License. See [LICENSE](LICENSE) for details.
 
----
+
 
 ## Citation
 
@@ -122,7 +122,7 @@ If you use this repository in your research, please cite:
 }
 ```
 
----
+
 
 ## Roadmap / Future Work
 
