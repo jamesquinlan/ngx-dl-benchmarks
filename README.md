@@ -1,2 +1,134 @@
-# lp-ngx-dl-benchmarks
-Low-Precision Next-generation Deep Learning Benchmarks
+# LP-NGX-DL-Benchmarks
+
+Benchmarking Deep Neural Network (DNN) training using next-generation low-precision arithmetic in Julia.
+
+---
+
+## Overview
+
+This repository provides reproducible benchmarks for training deep neural networks using **next-generation low-precision arithmetic formats**, including:
+
+- IEEE `FP16`  
+- `bfloat16`  
+- `posit16`  
+- Optional experimental support for:  
+  - `FP8` variants (e.g., `E4M3`)  
+  - `posit8`  
+
+The goal is to systematically evaluate **stability, convergence, and performance tradeoffs** when training DNNs in low-precision, providing insights for both numerical analysis and machine learning research.
+
+---
+
+## Features
+
+- Benchmark multiple arithmetic formats on standard neural network architectures  
+- Measure **accuracy degradation**, **training stability**, and **performance metrics**  
+- Easy to extend to new arithmetic formats or architectures  
+- Fully reproducible with Julia scripts and configuration files  
+
+---
+
+## Installation
+
+Requires Julia ≥ 1.9 and standard scientific packages. First, clone the repository:
+
+```bash
+git clone https://github.com/yourusername/ngx-dl-benchmarks.git
+cd ngx-dl-benchmarks
+````
+
+Open Julia and activate the environment:
+
+```julia
+using Pkg
+Pkg.activate(".")
+Pkg.instantiate()
+```
+
+**Key Julia packages used:**
+
+* [Lux.jl](https://github.com/FluxML/Lux.jl) – Neural networks
+* [Posits.jl](https://github.com/takums/Posits.jl) – Posit arithmetic
+* [Plots.jl](https://github.com/JuliaPlots/Plots.jl) – Plotting results
+* [CSV.jl / DataFrames.jl](https://github.com/JuliaData) – Export results
+
+---
+
+## Usage
+
+Run a benchmark with default settings:
+
+```julia
+julia run_benchmark.jl --arithmetic=fp16 --model=resnet18 --dataset=cifar10
+```
+
+### Command-Line Options
+
+* `--arithmetic`: `fp16`, `bfloat16`, `posit16`, `fp8`, `posit8`
+* `--model`: neural network architecture (e.g., `resnet18`, `mlp`)
+* `--dataset`: dataset (e.g., `cifar10`, `mnist`)
+* `--epochs`: number of training epochs
+* `--batch-size`: batch size
+
+Example benchmarking multiple arithmetic types:
+
+```julia
+julia run_benchmark.jl --arithmetic=fp16,bfloat16,posit16 --model=resnet18 --dataset=cifar10
+```
+
+---
+
+## Results
+
+Benchmark outputs include:
+
+* Training loss curves
+* Accuracy metrics
+* Runtime / throughput
+* Memory usage
+
+Results can be exported in CSV or JSON for further analysis.
+
+---
+
+## Contributing
+
+Contributions are welcome! You can help by:
+
+* Adding support for additional arithmetic formats
+* Extending benchmarks to new architectures or datasets
+* Improving reproducibility and logging
+
+Please fork the repository and submit pull requests.
+
+---
+
+## License
+
+This project is released under the MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## Citation
+
+If you use this repository in your research, please cite:
+
+```bibtex
+@misc{ngx-dl-benchmarks2026,
+  author       = {Quinlan, James and Nelson, David and Wu, Winnie},
+  title        = {NGX-DL-Benchmarks: Benchmarking Neural Network Training in Next-Generation Low-Precision Arithmetic},
+  year         = {2026},
+  howpublished = {\url{https://github.com/jamesquinlan/ngx-dl-benchmarks}}
+}
+```
+
+---
+
+## Roadmap / Future Work
+
+* Expand FP8 variants and custom posit configurations
+* Integrate energy / hardware-level benchmarking
+* Include advanced architectures (Transformers, RNNs)
+* Automated plots and LaTeX-ready summary tables for publications
+ 
+ 
