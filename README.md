@@ -118,7 +118,7 @@ If you use this repository in your research, please cite:
   author       = {Quinlan, James and Nelson, David and Wu, Winnie},
   title        = {NGX-DL-Benchmarks: Benchmarking Neural Network Training in Next-Generation Low-Precision Arithmetic},
   year         = {2026},
-  howpublished = {\url{https://github.com/jamesquinlan/ngx-dl-benchmarks}}
+  howpublished = {\url{https://github.com/jamesquinlan/lp-ngx-dl-benchmarks}}
 }
 ```
 
