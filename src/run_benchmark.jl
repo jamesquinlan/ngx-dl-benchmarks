@@ -56,11 +56,9 @@ function benchmark_model(arith::String, model::String, dataset::String; epochs::
     # TODO: Convert model & data to selected arithmetic type
     # TODO: Train model and collect metrics
     
-    # Example placeholder results
     results = DataFrame(Arithmetic=arith, Model=model, Dataset=dataset,
                         Epochs=epochs, Accuracy=rand(), Loss=rand())
     
-    # Save results
     CSV.write("results_$arith.csv", results)
     println("Results saved to results_$arith.csv")
 end
