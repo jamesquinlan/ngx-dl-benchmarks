@@ -1,6 +1,6 @@
 # LP-NGX-DL-Benchmarks
 
-Benchmarking Deep Neural Network (DNN) training using next-generation low-precision arithmetic in Julia.
+Benchmarking Low-Precision Arithmetic for DNN Training in Julia
 
 
 
