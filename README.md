@@ -1,4 +1,4 @@
-# LP-NGX-DL-Benchmarks
+# NGX-DL-Benchmarks
 
 Benchmarking Low-Precision Arithmetic for DNN Training in Julia
 
