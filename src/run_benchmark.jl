@@ -4,7 +4,7 @@ using Flux # maybe use
 using Posits
 using Bfloat16
 using Takums
-# using Microfloat # look this one up, I forget
+# using Microfloat # look this one up, I forgot
 using DataFrames
 using CSV
 using Plots
@@ -19,24 +19,20 @@ function parse_args()
     s = ArgParseSettings()
     @add_arg_table s begin
         "--arithmetic"
-        help = "Comma-separated list of arithmetic types (fp16, bfloat16, posit16, fp8, posit8)"
-        default = "fp16"
+        default = "fp16" # Comma-separated list of arithmetic types (fp16, bfloat16, posit16, fp8, posit8)
         
         "--model"
-        help = "Model architecture (e.g., resnet18, mlp)"
-        default = "mlp"
+        default = "mlp" # Model architecture CSVs (e.g., resnet18, mlp)
         
         "--dataset"
-        help = "Dataset to train on (e.g., cifar10, mnist)"
-        default = "mnist"
+        default = "mnist" # Dataset to train CSVs (e.g., cifar10, mnist)
         
         "--epochs"
         help = "Number of epochs"
-        default = 10
+        default = 10 # Number of epochs
         
         "--batch-size"
-        help = "Batch size"
-        default = 64
+        default = 64 # Batch size
     end
     return parse_args(s)
 end
@@ -63,9 +59,6 @@ function benchmark_model(arith::String, model::String, dataset::String; epochs::
     println("Results saved to results_$arith.csv")
 end
 
-'''
-  main function 
-'''
 function main()
     args = parse_args()
     
@@ -77,7 +70,4 @@ function main()
 end
 
 
-# --------------------------------
-# Run when calling run_benchmarks
-# --------------------------------
 main()
