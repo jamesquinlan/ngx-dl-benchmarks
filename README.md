@@ -2,7 +2,16 @@
 
 Benchmarking Low-Precision Arithmetic for DNN Training in Julia
 
+![Julia](https://img.shields.io/badge/Julia-9558B2?logo=julia)
+![Open Source](https://img.shields.io/badge/Open-Source-green)
+![Research Code](https://img.shields.io/badge/Code-Research-blue)
 
+
+![IEEE 754](https://img.shields.io/badge/IEEE754-FP16%20FP32%20FP64-blue)
+![Posits](https://img.shields.io/badge/Posits-supported-success)
+![Takum](https://img.shields.io/badge/Takum-supported-success)
+![bfloat16](https://img.shields.io/badge/bfloat16-supported-success)
+![OFP8](https://img.shields.io/badge/OFP8-supported-success)
 
 ## Overview
 
