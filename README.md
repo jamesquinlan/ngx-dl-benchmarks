@@ -57,7 +57,7 @@ Pkg.instantiate()
 **Key Julia packages used:**
 
 * [Lux.jl](https://github.com/FluxML/Lux.jl) – Neural networks
-* [Posits.jl](https://github.com/takums/Posits.jl) – Posit arithmetic
+* [UniversalNumbers.jl](https://github.com/jamesquinlan/UniversalNumbers.jl) – Includes: Posits, Takums, BFloats, etc.
 * [Plots.jl](https://github.com/JuliaPlots/Plots.jl) – Plotting results
 * [CSV.jl / DataFrames.jl](https://github.com/JuliaData) – Export results
 
