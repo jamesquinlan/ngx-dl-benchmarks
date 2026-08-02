@@ -1,22 +1,25 @@
 using Distributed
 addprocs(8) # Tune to taste
 
-@everywhere using ArgParse
-@everywhere using Lux
-@everywhere using UniversalNumbers   # Posit{N,ES}, Takum{N}, BF16 all live here
-@everywhere using DataFrames
-@everywhere using CSV
-@everywhere using MLDatasets
-@everywhere using OneHotArrays
-@everywhere using Statistics
-@everywhere using Random, WeightInitializers, Optimisers, Zygote, MLUtils
-@everywhere using Printf, JLD2
-@everywhere using Accessors
+@everywhere begin
+    using ArgParse
+    using Lux
+    using UniversalNumbers
+    using DataFrames
+    using CSV
+    using MLDatasets
+    using OneHotArrays
+    using Statistics
+    using Random, WeightInitializers, Optimisers, Zygote, MLUtils
+    using Printf, JLD2
+    using Accessors
 
-@everywhere include("model_definitions.jl")
-@everywhere include("utilities.jl")
-@everywhere include("typeminmaxsupport.jl")
-@everywhere include("csv_handling.jl")
+    include("model_definitions.jl")
+    include("utilities.jl")
+    include("typeminmaxsupport.jl")
+    include("csv_handling.jl")
+end
+
 
 #=
   Command-line argument parser (read arguments)
