@@ -41,7 +41,7 @@ function SmallDropoutNIN(targets::Integer, in_chs::Integer = 1)
         ),
         GlobalMeanPool(),
         FlattenLayer(),
-        Chain(Dense(64 => 32, relu), BatchNorm(32), Dense(32 => targets)),
+        Dense(64 => targets),
         softmax
     )
 end
@@ -59,7 +59,7 @@ function SmallBatchNormNIN(targets::Integer, in_chs::Integer = 1)
         ),
         GlobalMeanPool(),
         FlattenLayer(),
-        Chain(Dense(64 => 32, relu), BatchNorm(32), Dense(32 => targets)),
+        Dense(64 => targets),
         softmax
     )
 end
@@ -70,14 +70,14 @@ function ResNetBlock(in_chs::Integer, out_chs::Integer; stride::Integer = 1)
     return Chain(
         Parallel(+,
             Chain(
-                Conv((3,3), in_chs => out_chs, stride = stride, pad = 1, use_bias = false),
+                Conv((3,3), in_chs => out_chs, stride = stride, pad = 1, use_bias = false, init_weight = kaiming_normal),
                 BatchNorm(out_chs),
                 relu,
-                Conv((3,3), out_chs => out_chs, stride = 1, pad = 1, use_bias = false),
+                Conv((3,3), out_chs => out_chs, stride = 1, pad = 1, use_bias = false, init_weight = kaiming_normal),
                 BatchNorm(out_chs),
             ),
             (stride == 1 && in_chs == out_chs) ? NoOpLayer() : Chain(
-                Conv((1,1), in_chs => out_chs, stride = stride, use_bias = false),
+                Conv((1,1), in_chs => out_chs, stride = stride, use_bias = false, init_weight = kaiming_normal),
                 BatchNorm(out_chs),
             )
         ),
@@ -95,7 +95,7 @@ end
 # As with other similar models, size makes this untenable for posit testing
 function ResNet18(targets::Integer, in_chs::Integer = 3)
     return Chain(
-        Conv((3, 3), in_chs => 64, stride = 1, pad = 1, use_bias = false),
+        Conv((3, 3), in_chs => 64, stride = 1, pad = 1, use_bias = false, init_weight = kaiming_normal),
         BatchNorm(64),
         relu,
         ResNetBlockLayer(64, 64, 1),
@@ -110,7 +110,7 @@ end
 
 function TinyResNet(targets::Integer, in_chs::Integer = 3)
     return Chain(
-        Conv((3,3), in_chs => 8, stride = 1, pad = 1, use_bias = false),
+        Conv((3,3), in_chs => 8, stride = 1, pad = 1, use_bias = false, init_weight = kaiming_normal),
         BatchNorm(8),
         relu,
         ResNetBlockLayer(8, 16, 1),
@@ -139,6 +139,7 @@ function FireModule(in_chs::Integer, squeeze::Integer, expand::Integer)
     )
 end
 
+# Reference only
 function SqueezeNet1(targets::Integer, in_chs::Integer = 3)
     return Chain(
         Conv((7,7), in_chs => 96, relu; stride = 2),
@@ -153,7 +154,9 @@ function SqueezeNet1(targets::Integer, in_chs::Integer = 3)
         FireModule(384, 64, 512),
         MaxPool((3,3); stride = 2),
         FireModule(512, 64, 512),
-        Conv((1,1), 512 => targets),
+        Dropout(0.5),
+        Conv((1,1), 512 => targets; init_weight = truncated_normal(; std = 0.01f0), init_bias = zeros32),
+        relu,
         GlobalMeanPool(),
         FlattenLayer()
     )
@@ -170,7 +173,7 @@ function TinySqueezeNet(targets::Integer, in_chs::Integer = 3)
         FireModule(128,20,64),
         MaxPool((3,3); stride = 2),
         Dropout(0.2),
-        Conv((1,1), 64 => targets),
+        Conv((1,1), 64 => targets; init_weight = truncated_normal(; std = 0.01f0), init_bias = zeros32),
         GlobalMeanPool(),
         FlattenLayer()
     )
@@ -178,6 +181,8 @@ end
 #endregion
 
 #region ViT_support
+# Largely mirrors Boltz.jl's implementation
+# However, compatibility issues mean we can't just use Boltz.jl
 function flatten_spatial(x::AbstractArray{T, 4}) where {T}
     return permutedims(reshape(x, (:, size(x, 3), size(x, 4))), (2, 1, 3))
 end
@@ -255,7 +260,6 @@ end
     init
 end
 
-# Note to self: check whether our adaptor correctly fixes randn32 output to correct type
 function ViPosEmbedding(embedding_size::Int, number_patches::Int; init=randn32)
     return ViPosEmbedding(embedding_size, number_patches, init)
 end
@@ -282,7 +286,8 @@ function VisionTransformerEncoder(
                         in_planes; nheads = number_heads,
                         attention_dropout_probability = dropout_rate
                     ),
-                    Lux.WrappedFunction(first)
+                    Lux.WrappedFunction(first),
+                    Lux.Dropout(dropout_rate)
                 ),
                 +
             ),
@@ -334,7 +339,8 @@ end
 #endregion
 
 #region ViT_models
-function VitBase16(targets::Integer, in_chs::Integer = 3)
+# Too large to test practically
+function VitBase(targets::Integer, in_chs::Integer = 3)
     return VisionTransformer(in_channels = in_chs, num_classes = targets)
 end
 
@@ -351,7 +357,7 @@ function Chimera(targets::Integer, in_chs::Integer)
         Conv((5,5), in_chs => 6, tanh; stride = 1),
         AdaptiveMeanPool((14, 14)),
         NINBlock(3, 6, 16, relu, 2, 1),
-        BlockLayer(16, 32, 1),
+        ResNetBlockLayer(16, 32, 1),
         AdaptiveMeanPool((5, 5)),
         FireModule(32, 16, 32),
         BatchNorm(32),

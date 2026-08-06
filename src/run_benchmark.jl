@@ -1,33 +1,12 @@
 using Distributed
-addprocs(8) # Tune to taste
-
-@everywhere begin
-    using ArgParse
-    using Lux
-    using UniversalNumbers
-    using DataFrames
-    using CSV
-    using MLDatasets
-    using OneHotArrays
-    using Statistics
-    using Random, WeightInitializers, Optimisers, Zygote, MLUtils
-    using Printf, JLD2
-    using Accessors
-
-    include("model_definitions.jl")
-    include("utilities.jl")
-    include("typeminmaxsupport.jl")
-    include("csv_handling.jl")
-end
-
-
+using ArgParse
 #=
   Command-line argument parser (read arguments)
 
   Example:
-  > julia run_benchmark.jl --arithmetic=fp16,bf16,posit16 --model=resnet18 --dataset=cifar10
+  > julia run_benchmark.jl --arithmetic=fp16,fp16+fp32,posit8_2 --model=lenet5 --dataset=cifar10
 =#
-@everywhere function parse_cmdline_args()
+function parse_cmdline_args()
     s = ArgParseSettings()
     @add_arg_table s begin
         "--arithmetic"
@@ -65,9 +44,43 @@ end
         help = "Minimum improvement the model requires to keep running"
         arg_type = Float64
         default = 0.001
+
+        "--workers"
+        help = "Number of workers the model will use to parallelize different-format training; -1 assigns 1 worker per format"
+        arg_type = Int
+        default = -1
     end
     return parse_args(s)
 end
+
+# Warmup section, so the program can automatically assign the correct worker count
+warmup_args = parse_cmdline_args()
+arith_list = String.(split(warmup_args["arithmetic"], ","))
+
+arith_list = [length(split(arith, "+")) == 1 ? arith : String.(split(arith, "+"))
+                for arith in arith_list]
+worker_count = warmup_args["workers"]
+if (worker_count == -1) worker_count = length(arith_list) end
+addprocs(worker_count)
+
+@everywhere begin
+    using Lux
+    using UniversalNumbers
+    using DataFrames
+    using CSV
+    using MLDatasets
+    using OneHotArrays
+    using Statistics
+    using Random, WeightInitializers, Optimisers, Zygote, MLUtils
+    using Printf, JLD2
+    using Accessors
+
+    include("model_definitions.jl")
+    include("utilities.jl")
+    include("typeminmaxsupport.jl")
+    include("csv_handling.jl")
+end
+
 
 # Map CLI arithmetic labels to the actual Julia numeric types
 @everywhere const ARITH_TYPES = Dict(
@@ -86,6 +99,9 @@ end
     "posit64_2"   => Posit{64, 2, UInt64},
     "posit64_3"   => Posit{64, 3, UInt64},
     "cfloat8_2"   => CFloat{8, 2, UInt8},
+    "cfloat8_3"   => CFloat{8, 3, UInt8},
+    "cfloat8_4"   => CFloat{8, 4, UInt8},
+    "cfloat8_5"   => CFloat{8, 5, UInt8},
     "takum8"      => Takum{8, UInt8},
     "takum16"     => Takum{16, UInt16},
     "takum32"     => Takum{32, UInt32},
@@ -95,6 +111,8 @@ end
 @everywhere arith_format(arith::AbstractVector) = (ARITH_TYPES[arith[1]], ARITH_TYPES[arith[2]])
 
 # Maps CLI model labels to the actual model definition and matching loss function
+# Note that some models are only present as reference, and are too large for practical
+# emulated-arithmetic training; see model_definitions.jl
 @everywhere const MODEL_TYPES = Dict(
     "lenet5"            => (LeNet5,            Lux.CrossEntropyLoss()),
     "smalldropoutnin"   => (SmallDropoutNIN,   Lux.CrossEntropyLoss()),
@@ -103,7 +121,7 @@ end
     "tinyresnet"        => (TinyResNet,        Lux.CrossEntropyLoss(logits = true)),
     "squeezenet1"       => (SqueezeNet1,       Lux.CrossEntropyLoss(logits = true)),
     "tinysqueezenet"    => (TinySqueezeNet,    Lux.CrossEntropyLoss(logits = true)),
-    "vitbase16"         => (VitBase16,         Lux.CrossEntropyLoss(logits = true)),
+    "vitbase"           => (VitBase,           Lux.CrossEntropyLoss(logits = true)),
     "microscopicvit"    => (MicroscopicVit,    Lux.CrossEntropyLoss(logits = true)),
     "chimera"           => (Chimera,           Lux.CrossEntropyLoss(logits = true)),
 )
@@ -120,7 +138,6 @@ end
     "emnistdigits"   => (EMNIST,       :digits),
     "fashionmnist"   => (FashionMNIST, ),
     "mnist"          => (MNIST,        ),
-    "omniglot"       => (Omniglot,     ),
     "svhn2"          => (SVHN2,        )
 )
 
@@ -389,7 +406,7 @@ function main()
     report_path = "./$(args["model"])/$(args["dataset"])/"
 
     # Only runs after all training is done; should be in the clear to assume done = true in all progress controllers
-    csv_log = CSVPrinter(report_path, arith_format.(arith_list))
+    csv_log = "\n~~~~\n" * CSVPrinter(report_path, arith_format.(arith_list))
     if !(csv_log == "") results = [results; csv_log] end
     logs = open(report_path * "log.txt", "a")
     for log in results

@@ -42,7 +42,7 @@ function CSVPrinter(report_path::String, typeset::Vector)
         try
             rm(report_path * "$type/progress_controller.jld2")
         catch
-            logging = logging * "\nCould not delete file: " * report_path * "progress_controller.jld2." *
+            logging = logging * "\nCould not delete file: " * report_path * "$type/progress_controller.jld2." *
                                 "Verify that the log existed to read."
         end
     end

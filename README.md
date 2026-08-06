@@ -15,14 +15,13 @@ Benchmarking Low-Precision Arithmetic for DNN Training in Julia
 
 ## Overview
 
-This repository provides reproducible benchmarks for training deep neural networks using **next-generation low-precision arithmetic formats**, including:
+This repository provides reproducible benchmarks for training deep neural networks using **next-generation low-precision arithmetic formats**, such as:
 
 - IEEE `FP16`  
 - `bfloat16`  
-- `posit16`  
-- Optional experimental support for:  
-  - `FP8` variants (e.g., `E4M3`)  
-  - `posit8`  
+- `posit16`
+- `takum16`
+- `FP8` with varying mantissa lengths
 
 The goal is to systematically evaluate **stability, convergence, and performance tradeoffs** when training DNNs in low-precision, providing insights for both numerical analysis and machine learning research.
 
@@ -60,6 +59,7 @@ Pkg.instantiate()
 * [UniversalNumbers.jl](https://github.com/jamesquinlan/UniversalNumbers.jl) – Includes: Posits, Takums, BFloats, etc.
 * [Plots.jl](https://github.com/JuliaPlots/Plots.jl) – Plotting results
 * [CSV.jl / DataFrames.jl](https://github.com/JuliaData) – Export results
+* [Distributed.jl](https://github.com/JuliaLang/Distributed.jl) – Distributes training of multiple formats to different processes
 
 
 
@@ -71,6 +71,18 @@ Run a benchmark with default settings:
 julia run_benchmark.jl --arithmetic=fp16 --model=resnet18 --dataset=cifar10
 ```
 
+### Testing examples
+
+These are the commands run for the associated paper:
+
+julia run_benchmark.jl --arithmetic=bf16,bf16+fp32,fp16+fp32,fp32+fp32,posit8_2,posit8_2+posit12_1,posit8_2+posit16_2,posit16_2,takum8,takum8+takum16,takum16 --model=lenet5 --dataset=mnist
+julia run_benchmark.jl --arithmetic=bf16,bf16+fp32,fp16+fp32,fp32+fp32,posit8_2,posit8_2+posit12_1,posit8_2+posit16_2,posit16_2,takum8,takum8+takum16,takum16 --model=smalldropoutnin --dataset=emnistbalanced
+julia run_benchmark.jl --arithmetic=bf16,bf16+fp32,fp16+fp32,fp32+fp32,posit8_2,posit8_2+posit12_1,posit8_2+posit16_2,posit16_2,takum8,takum8+takum16,takum16 --model=smallbatchnormnin --dataset=emnistbalanced
+julia run_benchmark.jl --arithmetic=bf16,bf16+fp32,fp16+fp32,fp32+fp32,posit8_2,posit8_2+posit12_1,posit8_2+posit16_2,posit16_2,takum8,takum8+takum16,takum16 --model=tinyresnet --dataset=cifar10
+julia run_benchmark.jl --arithmetic=bf16,bf16+fp32,fp16+fp32,fp32+fp32,posit8_2,posit8_2+posit12_1,posit8_2+posit16_2,posit16_2,takum8,takum8+takum16,takum16 --model=tinysqueezenet --dataset=cifar10
+julia run_benchmark.jl --arithmetic=bf16,bf16+fp32,fp16+fp32,fp32+fp32,posit8_2,posit8_2+posit12_1,posit8_2+posit16_2,posit16_2,takum8,takum8+takum16,takum16 --model=microscopicvit --dataset=svhn2
+julia run_benchmark.jl --arithmetic=bf16,bf16+fp32,fp16+fp32,fp32+fp32,posit8_2,posit8_2+posit12_1,posit8_2+posit16_2,posit16_2,takum8,takum8+takum16,takum16 --model=chimera --dataset=fashionmnist
+
 ### Command-Line Options
 
 * `--arithmetic`: `fp16`, `bfloat16`, `posit16`, `fp8`, `posit8`
@@ -78,11 +90,15 @@ julia run_benchmark.jl --arithmetic=fp16 --model=resnet18 --dataset=cifar10
 * `--dataset`: dataset (e.g., `cifar10`, `mnist`)
 * `--epochs`: number of training epochs
 * `--batch-size`: batch size
+* `--seed`: random seed
+* `--patience`: Used for early stopping; number of epochs the model will wait for an improvement
+* `--improvement-epsilon`: Used for early stopping; minimum improvement for the model to reset patience
+* `--workers`: Number of processes training will distribute over
 
 Example benchmarking multiple arithmetic types:
 
 ```julia
-julia run_benchmark.jl --arithmetic=fp16,bfloat16,posit16 --model=resnet18 --dataset=cifar10
+julia run_benchmark.jl --arithmetic=fp16,fp16+fp32,posit8_2 --model=lenet5 --dataset=mnist
 ```
 
 
@@ -91,10 +107,7 @@ julia run_benchmark.jl --arithmetic=fp16,bfloat16,posit16 --model=resnet18 --dat
 
 Benchmark outputs include:
 
-* Training loss curves
-* Accuracy metrics
-* Runtime / throughput
-* Memory usage
+* Per-epoch accuracy metrics for training and testing data
 
 Results can be exported in CSV or JSON for further analysis.
 
@@ -137,7 +150,5 @@ If you use this repository in your research, please cite:
 
 * Expand FP8 variants and custom posit configurations
 * Integrate energy / hardware-level benchmarking
-* Include advanced architectures (Transformers, RNNs)
+* Include advanced architectures (e.g. RNNs)
 * Automated plots and LaTeX-ready summary tables for publications
- 
- 
