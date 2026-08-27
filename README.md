@@ -73,7 +73,7 @@ julia run_benchmark.jl --arithmetic=fp16 --model=resnet18 --dataset=cifar10
 
 ### Testing examples
 
-These are the commands run for the associated paper:
+These are the commands run for the associated paper (from `src/`):
 
 ```julia
 julia run_benchmark.jl --arithmetic=bf16,bf16+fp32,fp16+fp32,fp32,posit8_2,posit8_2+posit12_1,posit8_2+posit16_2,posit16_2,takum8,takum8+takum16,takum16 --model=lenet5 --dataset=mnist
