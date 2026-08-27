@@ -111,7 +111,7 @@ end
 @everywhere arith_format(arith::AbstractVector) = (ARITH_TYPES[arith[1]], ARITH_TYPES[arith[2]])
 
 # Maps CLI model labels to the actual model definition and matching loss function
-# Note that some models are only present as reference, and are too large for practical
+# Note that some models are only present as a reference, and are too large for practical
 # emulated-arithmetic training; see model_definitions.jl
 @everywhere const MODEL_TYPES = Dict(
     "lenet5"            => (LeNet5,            Lux.CrossEntropyLoss()),
@@ -140,6 +140,27 @@ end
     "mnist"          => (MNIST,        ),
     "svhn2"          => (SVHN2,        )
 )
+
+# Pre-download the requested dataset on each worker before parallel benchmarking.
+# This prevents multiple workers from simultaneously initializing
+# the same DataDeps-managed dataset.
+dataset_name = lowercase(warmup_args["dataset"])
+dataset_info = DATASETS[dataset_name]
+
+for worker in workers()
+    println("Initializing $dataset_name on worker $worker...")
+    remotecall_fetch(worker, dataset_info) do info
+        dataset = info[1]
+        if dataset == EMNIST
+            dataset(info[2], split=:train)
+            dataset(info[2], split=:test)
+        else
+            dataset(split=:train)
+            dataset(split=:test)
+        end
+        nothing
+    end
+end
 
 @everywhere function get_results(d, t, ps, st, model)
     test_data_loader = DataLoader((d, t), batchsize = 64)
