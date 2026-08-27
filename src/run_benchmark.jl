@@ -379,7 +379,8 @@ end
         error("Mixed precision requires exactly two formats (received $arith)")
     end
     if arith[1] == arith[2]
-        error("Mixed precision cannot use same type twice (received $arith)")
+        println("Warning: attempted mixed-precision with $(arith[1]) as both types. Running in uniform-precision.")
+        return obtain_optimizer(arith[1])
     end
     T = get(ARITH_TYPES, arith[2]) do
         error("Unknown arithmetic type: $(arith[2]). Valid options: $(join(keys(ARITH_TYPES), ", "))")
