@@ -59,10 +59,9 @@ end
 
 # Warmup section, so the program can automatically assign the correct worker count
 warmup_args = parse_cmdline_args()
+# Kept as raw CLI labels (e.g. "fp32", "bf16+fp32") -- these double as the results
+# folder/file names, so they must stay filesystem-safe (no spaces/braces/commas).
 arith_list = String.(split(warmup_args["arithmetic"], ","))
-
-arith_list = [length(split(arith, "+")) == 1 ? arith : String.(split(arith, "+"))
-                for arith in arith_list]
 worker_count = warmup_args["workers"]
 if (worker_count == -1) worker_count = length(arith_list) end
 addprocs(worker_count)
@@ -112,9 +111,6 @@ end
     "takum16"     => Takum{16, UInt16},
     "takum32"     => Takum{32, UInt32},
 )
-
-@everywhere arith_format(arith::AbstractString) = ARITH_TYPES[arith]
-@everywhere arith_format(arith::AbstractVector) = (ARITH_TYPES[arith[1]], ARITH_TYPES[arith[2]])
 
 # Maps CLI model labels to the actual model definition and matching loss function
 # Note that some models are only present as a reference, and are too large for practical
@@ -251,8 +247,9 @@ end
                           epochs::Int=10, batch_size::Int=64, seed::Int=0,
                           patience::Int=3, improvement_epsilon::AbstractFloat=0.001)
                           
-    T = get(ARITH_TYPES, arith_label) do
-        error("Unknown arithmetic type: $arith_label. Valid options: $(join(keys(ARITH_TYPES), ", "))")
+    base_label = String(first(split(arith_label, "+")))
+    T = get(ARITH_TYPES, base_label) do
+        error("Unknown arithmetic type: $base_label. Valid options: $(join(keys(ARITH_TYPES), ", "))")
     end
     m = get(MODEL_TYPES, model) do
         error("Unknown model type: $model. Valid options: $(join(keys(MODEL_TYPES), ", "))")
@@ -260,9 +257,9 @@ end
     d = get(DATASETS, dataset) do
         error("Unknown dataset: $dataset. Valid options: $(join(keys(DATASETS), ", "))")
     end
-    opt isa MixedPrecision ?
-        report_path = joinpath(RESULTS_DIR, model, dataset, "($T, $(typeof(opt).parameters[1]))") * "/" :
-        report_path = joinpath(RESULTS_DIR, model, dataset, "$T") * "/"
+    # arith_label (e.g. "fp32", "bf16+fp32") is already filesystem-safe, so it's used
+    # directly as the results folder name instead of stringifying the Julia type.
+    report_path = joinpath(RESULTS_DIR, model, dataset, arith_label) * "/"
 
     mkpath(report_path)
     adaptor(m) = (Lux.LuxEltypeAdaptor{T}())(m)
@@ -399,19 +396,19 @@ end
 end
 
 @everywhere function obtain_optimizer(arith::String)
-    return OptimiserChain(WeightDecay(0.001), YunAdam(; eta = 0.001, epsilon = 1e-4))
-end
-
-@everywhere function obtain_optimizer(arith::Vector)
-    if length(arith) != 2
+    parts = split(arith, "+")
+    if length(parts) == 1
+        return OptimiserChain(WeightDecay(0.001), YunAdam(; eta = 0.001, epsilon = 1e-4))
+    end
+    if length(parts) != 2
         error("Mixed precision requires exactly two formats (received $arith)")
     end
-    if arith[1] == arith[2]
-        println("Warning: attempted mixed-precision with $(arith[1]) as both types. Running in uniform-precision.")
-        return obtain_optimizer(arith[1])
+    if parts[1] == parts[2]
+        println("Warning: attempted mixed-precision with $(parts[1]) as both types. Running in uniform-precision.")
+        return obtain_optimizer(String(parts[1]))
     end
-    T = get(ARITH_TYPES, arith[2]) do
-        error("Unknown arithmetic type: $(arith[2]). Valid options: $(join(keys(ARITH_TYPES), ", "))")
+    T = get(ARITH_TYPES, parts[2]) do
+        error("Unknown arithmetic type: $(parts[2]). Valid options: $(join(keys(ARITH_TYPES), ", "))")
     end
     return MixedPrecision(T, OptimiserChain(WeightDecay(0.001), YunAdam(; eta = 0.001, epsilon = 1e-4)))
 end
@@ -422,7 +419,7 @@ function main()
 
     # Claude used to convert to pmap
     results = pmap(arith_list; #=on_error = identity=#) do arith
-        benchmark_model(arith isa Vector ? arith[1] : arith, obtain_optimizer(arith), args["model"], args["dataset"];
+        benchmark_model(arith, obtain_optimizer(arith), args["model"], args["dataset"];
                         epochs=args["epochs"], batch_size=args["batch-size"], seed=args["seed"],
                         patience=args["patience"], improvement_epsilon=args["improvement-epsilon"])
     end
@@ -430,7 +427,7 @@ function main()
     report_path = joinpath(RESULTS_DIR, args["model"], args["dataset"]) * "/"
 
     # Only runs after all training is done; should be in the clear to assume done = true in all progress controllers
-    csv_log = "\n~~~~\n" * CSVPrinter(report_path, arith_format.(arith_list))
+    csv_log = "\n~~~~\n" * CSVPrinter(report_path, arith_list)
     if !(csv_log == "") results = [results; csv_log] end
     logs = open(report_path * "log.txt", "a")
     for log in results
